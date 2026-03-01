@@ -463,6 +463,10 @@ class Attention(nn.Module):
             return q, k
 
         assert self.freqs_cis is not None
+        # Recompute if input sequence length changed (resolution override) or dtype was corrupted
+        if self.freqs_cis.shape[0] != q.shape[-2] or not self.freqs_cis.is_complex():
+            w = h = math.sqrt(q.shape[-2])
+            self.freqs_cis = self.compute_cis(end_x=w, end_y=h).to(q.device)
         return apply_rotary_enc(q, k, freqs_cis=self.freqs_cis)
 
     def forward(self, x: Tensor) -> Tensor:
